@@ -9,6 +9,7 @@ import static java.lang.Math.abs;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.Random;
+import java.util.Scanner;
 
 
 /**
@@ -140,9 +141,39 @@ public class NewCipherBlock {
     }
     
     /* ECB Mode */
-    public void encECB(){}
+    public void encECB(){
+        //Insert text addtion into plaintext
+        int len = plaintext.length();
+        if (len % blockLen != 0){
+            String str = new Character((char) Integer.parseInt("11111111", 2)).toString();
+            for (int i=len%blockLen; i<blockLen; i++){
+                plaintext += str;
+                len++;
+            }
+        }
+        //Main process
+        for (int i=0; i<len; i+=blockLen){
+            String plainBlock = plaintext.substring(i, i+blockLen);
+            ciphertext += encryptor(plainBlock);
+        }
+    }
     
-    public void decECB(){}
+    public void decECB(){
+        //Insert text addtion into plaintext
+        int len = ciphertext.length();
+        if (len % blockLen != 0){
+            String str = new Character((char) Integer.parseInt("11111111", 2)).toString();
+            for (int i=len%blockLen; i<blockLen; i++){
+                ciphertext += str;
+                len++;
+            }
+        }
+        //Main process
+        for (int i=0; i<len; i+=blockLen){
+            String cipherBlock = ciphertext.substring(i, i+blockLen);
+            plaintext += decryptor(cipherBlock);
+        }
+    }
     
     /* CBC Mode*/
     public void encCBC(){
@@ -258,19 +289,57 @@ public class NewCipherBlock {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        // TODO code application logic here
+        Scanner userInput = new Scanner(System.in);
         NewCipherBlock k = new NewCipherBlock();
-        k.setPlaintext("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
-        k.setKey("abcdefgh");
-        k.setCiphertext("");
-        k.encCFB();
-        String cipher = k.getCiphertext();
+        System.out.println("What mode will you use?");
+        System.out.println("1. ECB");
+        System.out.println("2. CBC");
+        System.out.println("3. CFB 8-bit");
+        System.out.print("Enter your choice: "); int mode = userInput.nextInt();
+        System.out.println("Enter plaintext:");
+        String plain = userInput.next();
+        System.out.println("Enter key:");
+        String key = userInput.next();
+//        k.setPlaintext("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+//        k.setKey("abcdefgh");
+//        k.setCiphertext("");
+//        k.encCBC();
+//        String cipher = k.getCiphertext();
+//        k.setPlaintext("");
+//        k.setCiphertext(cipher);
+//        k.setKey("abcdefgh");
+//        k.decCCB();
+//        String plain = k.getPlaintext();
+        k.setPlaintext(plain);
+        k.setKey(key);
+        String cipher = "";
+        switch(mode){
+            case 1: k.encECB(); 
+                    cipher = k.getCiphertext();
+                    k.setPlaintext("");
+                    k.setCiphertext(cipher);
+                    k.decECB();
+                    plain = k.getPlaintext();
+                    break;
+            case 2: k.encCBC(); 
+                    cipher = k.getCiphertext();
+                    k.setPlaintext("");
+                    k.setCiphertext(cipher);
+                    k.decCBC();
+                    plain = k.getPlaintext();
+                    break;
+            case 3: k.encCFB(); 
+                    cipher = k.getCiphertext();
+                    k.setPlaintext("");
+                    k.setCiphertext(cipher);
+                    k.decCFB();
+                    plain = k.getPlaintext();
+                    break;
+            default: break;
+        }
+        System.out.println("ciphertext =");
         System.out.println(cipher);
-        k.setPlaintext("");
-        k.setCiphertext(cipher);
-        k.setKey("abcdefgh");
-        k.decCFB();
-        String plain = k.getPlaintext();
-        System.out.println(plain);
+        System.out.println("plaintext = ");
+        System.out.println(plain);        
     }
 }
