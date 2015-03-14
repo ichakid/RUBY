@@ -5,7 +5,6 @@
  */
 package newcipherblock;
 
-import static java.lang.Math.abs;
 
 /**
  *
@@ -62,6 +61,9 @@ public class NewCipherBlock {
     public int[] charToHexa(char c){
         int[] hex = new int[2];
         String h = Integer.toHexString((int) c);
+        if (h.length() == 1){
+            h = "0" + h;
+        }
         hex[0] = Integer.parseInt(h.substring(0,1), 16);
         hex[1] = Integer.parseInt(h.substring(1), 16);
         return hex;
@@ -73,9 +75,7 @@ public class NewCipherBlock {
         c = (char) Integer.parseInt(h, 16);
         return c;
     }
-    
-    //parser char-bit dan parser hexa-bit kayaknya nggak perlu ya..
-    
+        
     /*Inner function*/
     public int encInnerFunction(int r, int k){
         return (r+k)%16;
@@ -124,7 +124,6 @@ public class NewCipherBlock {
         for (int i=0; i<n; i++){
             innerKey[n-i-1] = charToHexa(key.charAt(i/2))[i%2];
         }
-        System.out.println(ciphertext);
         for (char c: ciphertext.toCharArray()){
             int[] lr = charToHexa(c);
             for (int i=0; i<n; i++){
@@ -142,7 +141,7 @@ public class NewCipherBlock {
     public static void main(String[] args) {
         // TODO code application logic here
         NewCipherBlock k = new NewCipherBlock();
-        k.setPlaintext("ABDEFZHPLM");
+        k.setPlaintext("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
         k.setKey("abcdefgh");
         k.setCiphertext("");
         k.encryptor();
@@ -153,7 +152,6 @@ public class NewCipherBlock {
         k.setKey("abcdefgh");
         k.decryptor();
         String plain = k.getPlaintext();
-        System.out.println(plain);
+        System.out.println(plain);       
     }
-    
 }
