@@ -5,6 +5,11 @@
  */
 package newcipherblock;
 
+import static java.lang.Math.abs;
+import java.math.BigInteger;
+import java.security.SecureRandom;
+import java.util.Random;
+
 
 /**
  *
@@ -15,13 +20,13 @@ public class NewCipherBlock {
     private String plaintext;
     private String key;
     private String ciphertext;
-    private int[] innerKey;
+    private int blockLen;
     
     public NewCipherBlock(){
         plaintext = "";
         key = "";
         ciphertext = "";
-        innerKey = new int[16];
+        blockLen = key.length();
     }
     
     /*Getter & Setter*/
@@ -37,24 +42,17 @@ public class NewCipherBlock {
         return this.ciphertext;
     }
     
-    public int[] getInnerKey(){
-        return this.innerKey;
-    }
-    
     public void setPlaintext(String s){
         this.plaintext = s;
     }
     
     public void setKey(String s){
         this.key = s;
+        this.blockLen = s.length();
     }
     
     public void setCiphertext(String s){
         this.ciphertext = s;
-    }
-    
-    public void setInnerKey(int[] ik){
-        this.innerKey = ik;
     }
     
     /*Parsers*/
@@ -103,35 +101,102 @@ public class NewCipherBlock {
     }
     
     /*Enkripsi*/
-    public void encryptor(){
-        int n = key.length()*2;     //number of iterations
+    public String encryptor(String plainBlock){
+        int n = blockLen;
+        String cipher = "";
+        int[] innerKey = new int[n];
         for (int i=0; i<n; i++){
             innerKey[i] = charToHexa(key.charAt(i/2))[i%2];
         }
-        for (char c: plaintext.toCharArray()){
+        for (char c: plainBlock.toCharArray()){
             int[] lr = charToHexa(c);
             for (int i=0; i<n; i++){
                 lr = encFeistel(lr, innerKey[i]);
                 innerKey[i] = lr[0];
             }
-            ciphertext += "" + hexaToChar(lr);
+            cipher += hexaToChar(lr);
         }
+        return cipher;
     }
     
     /*Dekripsi*/
-    public void decryptor(){
-        int n = key.length()*2;     //number of iterations
+    public String decryptor(String cipherBlock){
+        int n = blockLen;     //number of iterations
+        String plain = "";
+        int[] innerKey = new int[n];
         for (int i=0; i<n; i++){
             innerKey[n-i-1] = charToHexa(key.charAt(i/2))[i%2];
         }
-        for (char c: ciphertext.toCharArray()){
+        for (char c: cipherBlock.toCharArray()){
             int[] lr = charToHexa(c);
             for (int i=0; i<n; i++){
                 int tmp = lr[0];
                 lr = decFeistel(lr, innerKey[i]);
                 innerKey[i] = tmp;
             }
-            plaintext += "" + hexaToChar(lr);
+            plain += hexaToChar(lr);
+        }
+        return plain;
+    }
+    
+    /* CBC Mode*/
+    public void encCBC(){
+        //Initialize the IV (Initialization Vector)
+        int seed = 0;
+        for (char c: key.toCharArray()){
+            seed += (int) c;
+        }
+        Random rand = new Random(seed);
+        String iv = "";
+        for (int i=0; i<blockLen; i++){
+            int x = abs(rand.nextInt()) % 256;
+            iv += (char) x;
+        }
+        //Insert text addtion into plaintext
+        int len = plaintext.length();
+        if (len % blockLen != 0){
+            String str = new Character((char) Integer.parseInt("11111111", 2)).toString();
+            for (int i=len%blockLen; i<blockLen; i++){
+                plaintext += str;
+                len++;
+            }
+        }
+        //Main process
+        for (int i=0; i<len; i+=blockLen){
+            String plainBlock = plaintext.substring(i, i+blockLen);
+            StringBuilder sb = new StringBuilder();
+            for (int j=0; j<blockLen; j++){
+                sb.append((char) (plainBlock.charAt(j) ^ iv.charAt(j)));
+            }
+            iv = encryptor(sb.toString());
+            ciphertext += iv;
+        }
+    }
+    
+    public void decCBC(){
+        //Initialize the IV (Initialization Vector)
+        int seed = 0;
+        for (char c: key.toCharArray()){
+            seed += (int) c;
+        }
+        Random rand = new Random(seed);
+        String iv = "";
+        for (int i=0; i<blockLen; i++){
+            int x = abs(rand.nextInt()) % 256;
+            iv += (char) x;
+        }
+        //Main process
+        int len = ciphertext.length();
+        System.out.println(len);
+        for (int i=0; i<len; i+=blockLen){
+            String cipherBlock = ciphertext.substring(i, i+blockLen);
+            String cipherBlockNew = decryptor(cipherBlock);
+            StringBuilder sb = new StringBuilder();
+            for (int j=0; j<blockLen; j++){
+                sb.append((char) (cipherBlockNew.charAt(j) ^ iv.charAt(j)));
+            }
+            iv = cipherBlock;
+            plaintext += sb.toString();
         }
     }
     
@@ -144,14 +209,14 @@ public class NewCipherBlock {
         k.setPlaintext("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
         k.setKey("abcdefgh");
         k.setCiphertext("");
-        k.encryptor();
+        k.encCBC();
         String cipher = k.getCiphertext();
         System.out.println(cipher);
         k.setPlaintext("");
         k.setCiphertext(cipher);
         k.setKey("abcdefgh");
-        k.decryptor();
+        k.decCBC();
         String plain = k.getPlaintext();
-        System.out.println(plain);       
+        System.out.println(plain);
     }
 }
