@@ -20,7 +20,7 @@ public class NewCipherBlock {
     private String plaintext;
     private String key;
     private String ciphertext;
-    private int blockLen;
+    private int blockLen;       //size of block, number of char in a block
     
     public NewCipherBlock(){
         plaintext = "";
@@ -139,6 +139,11 @@ public class NewCipherBlock {
         return plain;
     }
     
+    /* ECB Mode */
+    public void encECB(){}
+    
+    public void decECB(){}
+    
     /* CBC Mode*/
     public void encCBC(){
         //Initialize the IV (Initialization Vector)
@@ -200,6 +205,55 @@ public class NewCipherBlock {
         }
     }
     
+    /* CFB Mode */
+    public void encCFB(){
+        //Initialize the IV (Initialization Vector) or shift register or queue, with the size of blockLen
+        int seed = 0;
+        for (char c: key.toCharArray()){
+            seed += (int) c;
+        }
+        Random rand = new Random(seed);
+        String iv = "";
+        for (int i=0; i<blockLen; i++){
+            int x = abs(rand.nextInt()) % 256;
+            iv += (char) x;
+        }
+        //Main process
+        //Because we use CFB 8-bit, the operation takes in form of char
+        int len = plaintext.length();
+        for (int i=0; i<len; i++){
+            char p = plaintext.charAt(i);       //get the 8 bits of plaintext
+            char msb = encryptor(iv.substring(0, blockLen)).charAt(0);      //get the most left 8 bits of encrypted shift register
+            char c = (char) (p ^ msb);          //these are XOR'ed
+            iv = iv.substring(1) + c;           //append the 8 bits ciphertext into the shift register, then shift 8 bits of the result to the left
+            ciphertext += c;
+        }        
+    }
+    
+    public void decCFB(){
+        //Initialize the IV (Initialization Vector) or shift register or queue, with the size of blockLen
+        int seed = 0;
+        for (char c: key.toCharArray()){
+            seed += (int) c;
+        }
+        Random rand = new Random(seed);
+        String iv = "";
+        for (int i=0; i<blockLen; i++){
+            int x = abs(rand.nextInt()) % 256;
+            iv += (char) x;
+        }
+        //Main process
+        //Because we use CFB 8-bit, the operation takes in form of char
+        int len = ciphertext.length();
+        for (int i=0; i<len; i++){
+            char c = ciphertext.charAt(i);       //get the 8 bits of ciphertext
+            char msb = encryptor(iv.substring(0, blockLen)).charAt(0);      //get the most left 8 bits of encrypted shift register
+            char p = (char) (c ^ msb);          //these are XOR'ed
+            iv = iv.substring(1) + c;           //append the 8 bits ciphertext into the shift register, then shift 8 bits of the result to the left
+            plaintext += p;
+        }        
+    }
+    
     /**
      * @param args the command line arguments
      */
@@ -209,13 +263,13 @@ public class NewCipherBlock {
         k.setPlaintext("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
         k.setKey("abcdefgh");
         k.setCiphertext("");
-        k.encCBC();
+        k.encCFB();
         String cipher = k.getCiphertext();
         System.out.println(cipher);
         k.setPlaintext("");
         k.setCiphertext(cipher);
         k.setKey("abcdefgh");
-        k.decCBC();
+        k.decCFB();
         String plain = k.getPlaintext();
         System.out.println(plain);
     }
